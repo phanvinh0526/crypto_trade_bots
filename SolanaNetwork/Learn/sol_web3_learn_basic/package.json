@@ -1,0 +1,19 @@
+{
+  "name": "sol_web3_learn_basic",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solana/web3.js": "^1.94.0",
+    "solana": "^1.0.7-development"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10"
+  }
+}

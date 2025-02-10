@@ -1,0 +1,1 @@
+worker: python index_secondary_wallet_tracking.py
