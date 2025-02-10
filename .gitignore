@@ -1,0 +1,71 @@
+# Byte-compiled / cached files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+env/
+ENV/
+
+# Environment variables
+*.env
+*.envrc
+.env.local
+.env.*.local
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs and databases
+*.log
+*.sqlite3
+*.db
+*.sql
+
+# Python package dependencies
+pip-log.txt
+pip-delete-this-directory.txt
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
+*.iml
+
+# pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+
+# MyPy type checker
+.mypy_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+MANIFEST
+
+# Docker
+docker-compose.override.yml
+
+# Ignore compiled Cython files
+*.c
+*.so
+
+# Ignore Jupyter Notebook output
+*.ipynb_checkpoints/
+
+# Ignore Terraform state files (if using Terraform)
+.terraform/
+*.tfstate
+*.tfstate.backup
