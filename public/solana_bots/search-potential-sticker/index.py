@@ -12,6 +12,8 @@ from aiogram.client.default import DefaultBotProperties
 import psycopg2
 from psycopg2 import sql
 
+from LunaCrush import LunarCrushSearch, LunarCrushTopicPosts
+
 # ###### DESCRIPTION ###### #
 # This bot is to 
 #   1.  search for new pool from Bonkbot bot | Solana network
@@ -81,23 +83,33 @@ async def message_handler(msg: types.Message) -> None:
         pool_info = {}
 
         # New pool | Sol network
-        if nav_chain == '$NewPool_SOL$':
+        if nav_chain == 'NewPool_SOL':
             pool_info = extract_pool_info_solana(msg.text, nav_channel)
             # Conditions: If Mc >= 50k and Liq >= 20k
             if(pool_info['market_cap'] is not None and check_sol_conditions(pool_info) == True):
+                # 1. Perform Social Engagement check in real-time
+                is_potential = False
+
+                # 1.1 Count engagement of the ticker
+
+
+                # 1.2 Search posts with CA to find the original Tweet, and Creator background
+
+
+                # 2. Add sticker to Db for batch processing
                 add_record_to_db("token_pool_info", pool_info, "ON CONFLICT on CONSTRAINT token_pool_info_pk DO NOTHING")
                 await forward_message_to_a_forum(msg)
 
-        # New pool | Eth network
-        if nav_chain == '$NewPool_ETH$':
-            pool_info = extract_pool_info_etherium(msg.text)
-            add_record_to_db("token_pool_info", pool_info, "ON CONFLICT on CONSTRAINT token_pool_info_pk DO NOTHING")
-            await forward_message_to_a_forum(msg)
+        # # New pool | Eth network
+        # if nav_chain == '$NewPool_ETH$':
+        #     pool_info = extract_pool_info_etherium(msg.text)
+        #     add_record_to_db("token_pool_info", pool_info, "ON CONFLICT on CONSTRAINT token_pool_info_pk DO NOTHING")
+        #     await forward_message_to_a_forum(msg)
             
-        # New trade | Sol network
-        if nav_chain == '$Wallet_Tracking_SOL$':
-            trade_info = extract_wallet_tracking_sol(msg.text)
-            add_record_to_db("wallet_tracking_info", trade_info, "")
+        # # New trade | Sol network
+        # if nav_chain == '$Wallet_Tracking_SOL$':
+        #     trade_info = extract_wallet_tracking_sol(msg.text)
+        #     add_record_to_db("wallet_tracking_info", trade_info, "")
 
     # logging
     end_time = time.time()
@@ -112,7 +124,7 @@ def navigate_msg(msg: str) -> str:
     # Define regex patterns for each piece of information
     match = re.search(r"\$(.*?)\$", msg)
     if match:
-        resp = match.group(0)
+        resp = match.group(1)
         resp_chain, resp_channel = resp.rsplit("_", 1)
         print(f"Navigator: {resp_chain + '-' + resp_channel}")
         return resp_chain, resp_channel
@@ -258,7 +270,38 @@ def extract_pool_info_solana_bonkbot(text: str):
 
 
 def extract_pool_info_solana_gmgn_kol(text: str):
-    return None
+    # 'num_kol_buy' = 5
+    # 'token_name' = 'Central African Republic Meme'
+    # 'ca' = '7oBYdEhV4GkXC19ZfgAvXpJWp2Rn9pm1Bx2cVNxFpump'
+    # 'market_cap' = 36300000.0
+    # 'liquidity_pool_value' = 726900.0
+    # 'top_10' = 87.61
+    data = {}
+    # Patterns for extracting values
+    patterns = {
+        "num_kol_buy": r"(\d+)\s*KOL Buy",  # Extracts only the number
+        "token_name": r"\$\w+\(([^)]+)\)", # sticker name
+        "ca": r"\n([A-Za-z0-9]{42,46})",  # Matches the full token address
+        "market_cap": r"MCP:\s*\$?([\w+\.\,]+)",  # Extracts MCP value with suffix
+        "liquidity_pool_value": r"Liq:\s*[\d\.\,]+\s*SOL\s*\(\$([\d\.KMB]+)",  # Extracts liquidity in $
+        "top_10": r"TOP 10:\s*(\d+\.\d+%)"  # Extracts TOP 10 value as percentage
+    }
+    # Extract values using regex
+    for key, pattern in patterns.items():
+        match = re.search(pattern, text)
+        if match:
+            value = match.groups()
+            if key == "market_cap":  
+                data[key] = string_to_float(value[0])  # Convert MCP
+            elif key == "liquidity_pool_value":
+                data[key] = string_to_float(value[0])  # Convert Liquidity
+            elif key == "top_10":
+                data[key] = float(value[0].replace("%", ""))  # Convert % to float
+            else:
+                data[key] = int(value[0]) if key == "num_kol_buy" else value[0]
+        else:
+            data[key] = None
+    return data
 
 
 def extract_pool_info_solana_dexscreener(text: str):
@@ -291,15 +334,23 @@ def extract_pool_info_solana_dexscreener(text: str):
 
 
 def extract_pool_info_solana(text: str, nav_channel: str) -> dict:
-    # Bonkbot not in used to search new born token
-    if nav_channel.lower() == 'Bonkbot'.lower():
-        return extract_pool_info_solana_bonkbot(text)
-    # GMGN KolFomo not in used to search number of buys from KOL
-    if nav_channel.lower() == "Gmgn_KolFomo".lower():
-        return extract_pool_info_solana_gmgn_kol(text)
-    # Dex Screener to search top 10 token on-trend
-    if nav_channel.lower() == "DexScreener".lower():
-        return extract_pool_info_solana_dexscreener(text)
+    # # Bonkbot - search new pool
+    # if nav_channel.lower() == 'Bonkbot'.lower():
+    #     return extract_pool_info_solana_bonkbot(text)
+
+    # GMGN KOL Fomo - search sticker bought by KOLs
+    if nav_channel.lower() == "GmgnKolFomo".lower():
+        # Filter: KOL buy between 4 and 5
+        match = re.search(r"(\d+)\s*KOL Buy", text)
+        if match:
+            value = match.group(1)
+            if int(value) in (4, 8):
+                return extract_pool_info_solana_gmgn_kol(text)
+        return {'market_cap': None}
+    
+    # # Dex Screener to search top 10 token on-trend
+    # if nav_channel.lower() == "DexScreener".lower():
+    #     return extract_pool_info_solana_dexscreener(text)
     
 
 def add_record_to_db(tbl_name: str, data: dict, constraints=""):
@@ -379,6 +430,9 @@ async def forward_message_to_a_forum(msg: types.Message) -> None:
 # Main Funcs
 async def main() -> None:
     """The main function which will execute our event loop and start polling"""
+    # Remove pending updates before starting the bot
+    await bot.delete_webhook(drop_pending_updates=True)
+
     # Start polling
     print("Start polling...")
     await dp.start_polling(bot)
