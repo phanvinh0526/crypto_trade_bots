@@ -1,0 +1,19 @@
+# Login
+heroku container:login
+
+# Set container stack in Heroku
+heroku stack:set container --app app-check-social-engagement
+
+# Build and push image to Heroku
+heroku container:push web --app app-check-social-engagement
+
+# Release the app
+heroku container:release web --app app-check-social-engagement
+
+# Set env variables
+heroku config:set VP_CHECK_SOCIAL_ENG_BOT=7666573394:AAEmPTFCcez3QCSmLaAAqBE0L08wPXe1JxU --app app-check-social-engagement
+heroku config:set LUNA_CRUSH_API_TOKEN=rihmvg7kt5ljiqvkdybfeq2xom70kff5lgydcwu --app app-check-social-engagement
+
+# Check logs
+heroku logs --tail --app app-check-social-engagement
+

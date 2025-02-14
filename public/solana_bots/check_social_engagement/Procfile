@@ -1,1 +1,1 @@
-worker: python index_search_new_pool_from_bonkbot.py
+worker: python index.py
