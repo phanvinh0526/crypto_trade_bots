@@ -11,8 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application files
 COPY . .
 
-# Expose port 8000 (Heroku listens on this port)
-EXPOSE 8000
+# Expose port 5000 (Heroku listens on this port)
+EXPOSE 5000
 
 # Run the bot
 CMD ["python", "main.py"]

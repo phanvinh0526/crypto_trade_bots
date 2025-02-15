@@ -80,6 +80,8 @@ async def message_handler(msg: types.Message) -> None:
         # clear state
         user_states.pop(user_id, None)
 
+    else:
+        msg.reply(f"Pls select a command to run...")
 
 
 # ######## #
