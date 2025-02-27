@@ -12,7 +12,7 @@ from aiogram.client.default import DefaultBotProperties
 import psycopg2
 from psycopg2 import sql
 
-from LunaCrush import LunarCrushSearch, LunarCrushTopicPosts
+from LunaCrush import LunarCrushSearch, LunarCrushTopicPosts, format_json_for_telegram
 
 # ###### DESCRIPTION ###### #
 # This bot is to 
@@ -36,34 +36,55 @@ from LunaCrush import LunarCrushSearch, LunarCrushTopicPosts
 load_dotenv()
 
 # CREDENTIALS
-TELE_BOT_SEARCH_NEWPOOL_CRED = os.environ['VP_SEARCH_NEWPOOL_BOT']
+VP_SEARCH_NEWPOOL_BOT = os.environ['VP_SEARCH_NEWPOOL_BOT']
 
 # Connect to PostgresDb
 DATABASE_URL = os.environ['DATABASE_URL']
 
-# Constants
-TAR_FORUM_ID = os.environ['TAR_FORUM_ID']
-TAR_TOPIC_ID = os.environ['TAR_TOPIC_ID']
-
 # Setup logging
 logging.basicConfig(level=logging.ERROR)
-
 
 # Dispatcher
 dp = Dispatcher()
 bot = Bot(
-    token= TELE_BOT_SEARCH_NEWPOOL_CRED,
+    token= VP_SEARCH_NEWPOOL_BOT,
     default=DefaultBotProperties(parse_mode='HTML')
 )
+
+# Constants
+user_states = {} # Tele bot states capture
+TAR_FORUM_ID = os.environ['TAR_FORUM_ID']
+TAR_TOPIC_ID = os.environ['TAR_TOPIC_ID']
+
+# Tracking channels
+FLG_BONKBOT_SEARCH = False
+FLG_GMGN_KOL_SEARCH = True
+FLG_WALLET_TRACKING_SEARCH = False
+FLG_TOP_TRENDING_DEX = True
 
 # ############## #
 # Command handlers
 # ############## #
-@dp.message(CommandStart())
-async def cmd_start(msg: types.Message) -> None:
+@dp.message(Command("start"))
+async def start_command_func(msg: types.Message) -> None:
     await msg.answer(
-        text='This bot is to search for new pool from public Channels (Bonkbot, GMGN, ..etc..)'
+        text="""<b><u>This bot is about to search new pool created alerted by different channels
+            1.  [Disabled] 'Bonkbot New Pool' channel
+                + Filter condition:  MC >= 50k & Liq >= 20k
+            2.  [Enabled] 'GMGN KOL Signal Lvl 2' channel
+                + Filter condition: MC >= 50k & Liq >= 20k & KOL Buy in (4, 8)
+            3.  [Enabled] 'DexScreener Top Trending on SOL'
+                + Filter condition: Liq < MC & In top 10 trending
+            4.  [Disabled] Token from wallets tracking
+                + Filter condition: n/a
+        """,
+        parse_mode="HTML"
     )
+
+@dp.message(Command("ca_search"))
+async def ca_search_command(msg: types.Message) -> None:
+    await msg.reply(text="🔍 Please provide a string to search:", parse_mode="HTML")
+    user_states[msg.from_user.id] = "awaiting_ca_search_input" 
 
 
 # ############## #
@@ -84,8 +105,9 @@ async def message_handler(msg: types.Message) -> None:
 
         # New pool | Sol network
         if nav_chain == 'NewPool_SOL':
+            # Extract pool infor based on Channels
             pool_info = extract_pool_info_solana(msg.text, nav_channel)
-            # Conditions: If Mc >= 50k and Liq >= 20k
+
             if(pool_info['market_cap'] is not None and check_sol_conditions(pool_info) == True):
                 # 1. Perform Social Engagement check in real-time
                 is_potential = False
@@ -120,6 +142,30 @@ async def message_handler(msg: types.Message) -> None:
 
 # ######## #
 # Functions
+def extract_pool_info_solana(text: str, nav_channel: str) -> dict:
+    # Bonkbot
+    if FLG_BONKBOT_SEARCH and nav_channel.lower() == 'Bonkbot'.lower():
+        return extract_pool_info_solana_bonkbot(text)
+
+    # GMGN KOL Fomo - search sticker bought by KOLs
+    if FLG_GMGN_KOL_SEARCH and nav_channel.lower() == "GmgnKolFomo".lower():
+        # Filter: KOL buy between 4 and 5
+        match = re.search(r"(\d+)\s*KOL Buy", text)
+        if match:
+            value = match.group(1)
+            if int(value) in (4, 8):
+                return extract_pool_info_solana_gmgn_kol(text)
+        return {'market_cap': None}
+    
+    # Dex Screener to search top 10 token on-trend
+    if FLG_TOP_TRENDING_DEX and nav_channel.lower() == "DexScreener".lower():
+        return extract_pool_info_solana_dexscreener(text)
+
+    if FLG_WALLET_TRACKING_SEARCH:
+        # TODO
+        return None
+
+
 def navigate_msg(msg: str) -> str:
     # Define regex patterns for each piece of information
     match = re.search(r"\$(.*?)\$", msg)
@@ -215,7 +261,7 @@ def extract_trade_info(text):
 def check_sol_conditions(token: dict) -> bool:
     # FDV between 20k - 50k
     print(f"***Market_Cap: {token['market_cap']}") # Market_Cap: 887.3k / Liquidity_Pool_Value: 56.4k
-    if(token['market_cap'] >= 50000 and token['liquidity_pool_value'] >= 20000):
+    if(token['market_cap'] >= 50000 and token['liquidity_pool_value'] >= 20000 and token['liquidity_pool_value'] < token['market_cap']):
         return True
     return False 
 
@@ -332,26 +378,6 @@ def extract_pool_info_solana_dexscreener(text: str):
     # Respond
     return extracted_data
 
-
-def extract_pool_info_solana(text: str, nav_channel: str) -> dict:
-    # # Bonkbot - search new pool
-    # if nav_channel.lower() == 'Bonkbot'.lower():
-    #     return extract_pool_info_solana_bonkbot(text)
-
-    # GMGN KOL Fomo - search sticker bought by KOLs
-    if nav_channel.lower() == "GmgnKolFomo".lower():
-        # Filter: KOL buy between 4 and 5
-        match = re.search(r"(\d+)\s*KOL Buy", text)
-        if match:
-            value = match.group(1)
-            if int(value) in (4, 8):
-                return extract_pool_info_solana_gmgn_kol(text)
-        return {'market_cap': None}
-    
-    # # Dex Screener to search top 10 token on-trend
-    # if nav_channel.lower() == "DexScreener".lower():
-    #     return extract_pool_info_solana_dexscreener(text)
-    
 
 def add_record_to_db(tbl_name: str, data: dict, constraints=""):
     """

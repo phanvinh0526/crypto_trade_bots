@@ -57,7 +57,10 @@ class LunarCrushTopicPosts:
             total_followers += data['creator_followers']
             sentiment_scores += data['post_sentiment']
 
-        avg_sentiment = sentiment_scores / len(totals)
+        if len(totals) == 0:
+            avg_sentiment = 3
+        else:
+            avg_sentiment = sentiment_scores / len(totals)
         sentiment_label = "Positive" if avg_sentiment > 3 else "Neutral/Negative"
 
         return {
@@ -223,26 +226,26 @@ def format_json_for_telegram(topic_data, post_data):
     formatted_message = (
         f"📌 <b>Topic Data:</b>\n"
         f"💬 <b><u>Topic:</u></b> {topic}\n"
-        f"🔄 <b><u>Total Interactions (24h):</u></b> f'{total_interactions:,}'\n"
-        f"👥 <b><u>Total Creator Followers:</u></b> f'{total_followers:,}'\n"
+        f"🔄 <b><u>Total Interactions (24h):</u></b> {total_interactions:,}\n"
+        f"👥 <b><u>Total Creator Followers:</u></b> {total_followers:,}\n"
         f"📊 <b><u>Average Sentiment:</u></b> {avg_sentiment} ({sentiment_label})\n\n"
         
         f"📌 <b>Top Post:</b>\n"
         f"📅 <b><u>Created:</u></b> {top_post_created}\n"
         f"🔗 <b><u>[Post Link]({top_post_link})</u></b>\n"
-        f"👁️ <b><u>Views:</u></b> f'{top_post_views:,}'\n"
+        f"👁️ <b><u>Views:</u></b> {top_post_views:,}\n"
         f"🔄 <b><u>Retweets:</u></b> {top_post_retweets}\n"
         f"💬 <b><u>Replies:</u></b> {top_post_replies}\n"
-        f"👤 <b><u>Creator:</u></b> {first_creator_name} (f'{first_creator_followers:,}' followers)\n"
+        f"👤 <b><u>Creator:</u></b> {first_creator_name} ({first_creator_followers:,} followers)\n"
         f"📚 <b><u>Top 3 Topics:</u></b> {first_top_3_topics}\n\n"
         
         f"📌 <b>First Post:</b>\n"
         f"📅 <b><u>Created:</u></b> {first_post_created}\n"
         f"🔗 <b><u>[Post Link]({first_post_link})</u></b>\n"
-        f"👁️ <b><u>Views:</u></b> f'{first_post_views:,}'\n"
+        f"👁️ <b><u>Views:</u></b> {first_post_views:,}\n"
         f"🔄 <b><u>Retweets:</u></b> {first_post_retweets}\n"
         f"💬 <b><u>Replies:</u></b> {first_post_replies}\n"
-        f"👤 <b><u>Creator:</u></b> {earliest_creator_name} (f'{earliest_creator_followers:,}' followers)\n"
+        f"👤 <b><u>Creator:</u></b> {earliest_creator_name} ({earliest_creator_followers:,} followers)\n"
         f"📚 <b><u>Top 3 Topics:</u></b> {earliest_top_3_topics}\n"
     )
     print(formatted_message)
