@@ -1,0 +1,22 @@
+# Login
+heroku container:login
+
+# Set container stack in Heroku
+heroku stack:set container --app hyperliquid-wallet-tracking
+
+# Build and push image to Heroku
+heroku container:push worker --app hyperliquid-wallet-tracking
+
+# Release the app
+heroku container:release worker --app hyperliquid-wallet-tracking
+
+# Set env variables
+heroku config:set VP_CHECK_HYPERLIQUID_BOT=... --app hyperliquid-wallet-tracking
+heroku config:set VP_CRYPTO_GROUP_CHAT_ID=6952336597 --app hyperliquid-wallet-tracking
+heroku config:set VP_PERIODICAL_CHECK_TIME=36000 --app hyperliquid-wallet-tracking
+heroku config:set VP_USER_ADDRESSES=0x20c2d95a3dfdca9e9ad12794d5fa6fad99da44f5,0xf3f496c9486be5924a93d67e98298733bb47057c,0x899c0eef91d624cc4debab1ced1f05d89132d15a,0x24fb6523036ebcb3cc51deff138066dccf6bed0f,0x0ecd8a50ce988862dc0e69a669159036e88ea649,0x7dacca323e44f168494c779bb5e7483c468ef410,0xceec48581b3145a575508719f45da07dc57fa7ce --app hyperliquid-wallet-tracking
+
+
+# Check logs
+heroku logs --tail --app hyperliquid-wallet-tracking
+
