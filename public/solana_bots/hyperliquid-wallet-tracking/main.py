@@ -158,7 +158,7 @@ def format_trade_data(trade_data):
     table_str = f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute..."
     table_str += "<pre>\n"
     table_str += "{:<10} {:<8} {:<16} {:<15} {:<25} {:<10} ${:<12} ${:<10}\n".format(
-        "Address", "Coin", "Direction", "Position Value", "Exec Time", "Total Size", "Avg Price", "Avg PnL"
+        "Address", "Coin", "Direction", "PositionValue", "ExecTime", "TotalSize", "AvgPrice", "AvgPnL"
     )
     table_str += "-" * 120 + "\n"
 
