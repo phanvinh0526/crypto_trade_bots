@@ -24,6 +24,7 @@ load_dotenv()
 # CREDENTIALS
 VP_CHECK_HYPERLIQUID_BOT = os.environ['VP_CHECK_HYPERLIQUID_BOT']
 VP_CRYPTO_GROUP_CHAT_ID = os.environ['VP_CRYPTO_GROUP_CHAT_ID']
+VP_CRYPTO_GROUP_CHAT_TOPIC_ID = os.environ['VP_CRYPTO_GROUP_CHAT_TOPIC_ID']
 VP_PERIODICAL_CHECK_TIME = int(os.environ['VP_PERIODICAL_CHECK_TIME'])
 VP_USER_ADDRESSES = os.environ['VP_USER_ADDRESSES']
 
@@ -121,8 +122,10 @@ async def fetch_recent_trades(user_address):
             "avg_price": round(avg_price, 2),
             "avg_closedPnl": round(avg_pnl, 2),
             "avg_exec_time": convert_melbourne_datetime(avg_time),
-            "position_value": "{:,}".format(round(avg_price * data["total_size"], 2))
+            "position_value": round(avg_price * data["total_size"], 2)
         })
+    # filter by position_value
+    aggregated_trades = [trade for trade in aggregated_trades if trade.get("position_value", 0) > 10000]
     # sort by exec_time
     sorted_trades = sorted(aggregated_trades, key=lambda trade: trade.get("avg_exec_time", 0), reverse=True)
     return sorted_trades
@@ -151,8 +154,6 @@ def format_trade_data(trade_data):
     if not trade_data:
         return "<b>No recent trades found.</b>"
 
-
-
     # Start HTML table
     table_str = f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute..."
     table_str += "<pre>\n"
@@ -169,7 +170,7 @@ def format_trade_data(trade_data):
         url_address = f"<a href='{url_address}'>{short_address}</a>"
 
         # Format the row
-        table_str += "{:<20} {:<8} {:<16} {:<15} {:<15} {:<10,.2f} ${:<12,.2f} ${:<10,.2f}\n".format(
+        table_str += "{:<20} {:<8} {:<16} ${:<15,.2f} {:<15} {:<10,.2f} ${:<12,.2f} ${:<10,.2f}\n".format(
             url_address,  # Add hyperlink to address
             trade.get("coin", ""),
             trade.get("direction", ""),
@@ -188,30 +189,30 @@ async def send_to_telegram(message):
     """
     Send a formatted message to the Telegram group.
     """
-    await bot.send_message(chat_id=VP_CRYPTO_GROUP_CHAT_ID, text=message)
+    await bot.send_message(chat_id=VP_CRYPTO_GROUP_CHAT_ID, message_thread_id=VP_CRYPTO_GROUP_CHAT_TOPIC_ID, text=message)
     await bot.session.close()
 
 async def monitor_trades():
     """
     Periodically check for new trades every 5 minutes.
     """
-    while True:
-        print(f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute...")
-        formatted_message = ""
-        trades = []
+    # while True:
+    print(f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute...")
+    formatted_message = ""
+    trades = []
 
-        for user_address in USER_ADDRESSES:
-            trade = await fetch_recent_trades(user_address) 
-            if trade:
-                trades += trade
-            
-        if len(trades) > 0:
-            formatted_message = format_trade_data(trades)
-            await send_to_telegram(formatted_message)
-        else:
-            await send_to_telegram(f"No trades found in the last {VP_PERIODICAL_CHECK_TIME/60} minute.")
+    for user_address in USER_ADDRESSES:
+        trade = await fetch_recent_trades(user_address) 
+        if trade:
+            trades += trade
+        
+    if len(trades) > 0:
+        formatted_message = format_trade_data(trades)
+        await send_to_telegram(formatted_message)
+    else:
+        await send_to_telegram(f"No trades found in the last {VP_PERIODICAL_CHECK_TIME/60} minute.")
 
-        await asyncio.sleep(VP_PERIODICAL_CHECK_TIME)  # Wait for 5 minutes before checking again
+        # await asyncio.sleep(VP_PERIODICAL_CHECK_TIME)  # Wait for 5 minutes before checking again
 
 if __name__ == "__main__":
     asyncio.run(monitor_trades())
