@@ -9,6 +9,7 @@ from datetime import datetime
 from aiogram import types, Dispatcher, Bot
 from aiogram.filters import Command
 from aiogram.client.default import DefaultBotProperties
+import argparse
 
 # ###### DESCRIPTION ###### #
 # This bot is to 
@@ -154,6 +155,9 @@ def format_trade_data(trade_data):
     if not trade_data:
         return "<b>No recent trades found.</b>"
 
+    # Local vars
+    user_addreses = []
+
     # Start HTML table
     table_str = f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute..."
     table_str += "<pre>\n"
@@ -167,11 +171,11 @@ def format_trade_data(trade_data):
         # Shorten user address (e.g., 0xf3f496c9486be5924a93d67e98298733bb47057c → 0xf3...057c)
         short_address = f"{trade['user'][:4]}...{trade['user'][-4:]}"
         url_address = f"https://hyperdash.info/trader/{trade['user']}"
-        url_address = f"<a href='{url_address}'>{short_address}</a>"
+        user_addreses.append(f"<a href='{url_address}'>HyperDash: {short_address}</a>")
 
         # Format the row
         table_str += "{:<20} {:<8} {:<16} ${:<15,.2f} {:<15} {:<10,.2f} ${:<12,.2f} ${:<10,.2f}\n".format(
-            url_address,  # Add hyperlink to address
+            short_address,  # Add hyperlink to address
             trade.get("coin", ""),
             trade.get("direction", ""),
             trade.get("position_value", 0),
@@ -180,9 +184,11 @@ def format_trade_data(trade_data):
             trade.get("avg_price", 0),
             trade.get("avg_pnl", 0)
         )
-
     table_str += "</pre>"
-    print(table_str)
+
+    # Links of user addresses
+    table_str += "".join(map(str, user_addreses))
+
     return table_str
 
 async def send_to_telegram(message):
@@ -196,7 +202,6 @@ async def monitor_trades():
     """
     Periodically check for new trades every 5 minutes.
     """
-    # while True:
     print(f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute...")
     formatted_message = ""
     trades = []
@@ -211,8 +216,6 @@ async def monitor_trades():
         await send_to_telegram(formatted_message)
     else:
         await send_to_telegram(f"No trades found in the last {VP_PERIODICAL_CHECK_TIME/60} minute.")
-
-        # await asyncio.sleep(VP_PERIODICAL_CHECK_TIME)  # Wait for 5 minutes before checking again
 
 if __name__ == "__main__":
     asyncio.run(monitor_trades())
