@@ -56,16 +56,21 @@ user_states = {}
 @dp.message(Command("start"))
 async def start_command_func(msg: types.Message) -> None:
     await msg.answer(
-        text="""<b><u>This bot is about to search a CA (Contract Address) on Twitter to measure</u></b>
-            + Engagement impact
-            + Views
-            + Original post this sticker
-            + Analyze post widespread on social platform
-            + Understand hot topics that sticker creator interested in
+        text="""<b><u>This bot is about to track wallets on HyperLiquid and GMX</u></b>
+            + Filter filled orders >= 10k worth of USDT
+            + Selected wallet addresses
         """,
         parse_mode="HTML"
     )
 
+# @dp.message(Command("run_immediately"))
+# async def start_command_func(msg: types.Message) -> None:
+#     asyncio.run(monitor_trades(msg, True))
+
+
+# ############## #
+# Functions
+# ############## #
 async def fetch_recent_trades(user_address):
     """
     Fetch recent trades for a given wallet address from Hyperliquid API within the last 1 hour.
@@ -161,7 +166,7 @@ def format_trade_data(trade_data):
     # Start HTML table
     table_str = f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute..."
     table_str += "<pre>\n"
-    table_str += "{:<10} {:<8} {:<16} {:<15} {:<25} {:<10} ${:<12} ${:<10}\n".format(
+    table_str += "{:<12} {:<5} {:<13} {:<15} {:<27} {:<10} ${:<12} ${:<10}\n".format(
         "Address", "Coin", "Direction", "PositionValue", "ExecTime", "TotalSize", "AvgPrice", "AvgPnL"
     )
     table_str += "-" * 120 + "\n"
@@ -174,7 +179,7 @@ def format_trade_data(trade_data):
         user_addreses.append(f"<a href='{url_address}'>HyperDash: {short_address}</a>")
 
         # Format the row
-        table_str += "{:<20} {:<8} {:<16} ${:<15,.2f} {:<15} {:<10,.2f} ${:<12,.2f} ${:<10,.2f}\n".format(
+        table_str += "{:<12} {:<5} {:<13} ${:<15,.2f} {:<27} {:<10,.2f} ${:<12,.2f} ${:<10,.2f}\n".format(
             short_address,  # Add hyperlink to address
             trade.get("coin", ""),
             trade.get("direction", ""),
@@ -187,7 +192,7 @@ def format_trade_data(trade_data):
     table_str += "</pre>"
 
     # Links of user addresses
-    table_str += "".join(map(str, user_addreses))
+    table_str += "\n".join(map(str, user_addreses))
 
     return table_str
 
@@ -202,20 +207,26 @@ async def monitor_trades():
     """
     Periodically check for new trades every 5 minutes.
     """
-    print(f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute...")
-    formatted_message = ""
-    trades = []
+    while True:
+        print(f"Checking for new trades in the last {VP_PERIODICAL_CHECK_TIME/60} minute:")
+        formatted_message = ""
+        trades = []
 
-    for user_address in USER_ADDRESSES:
-        trade = await fetch_recent_trades(user_address) 
-        if trade:
-            trades += trade
-        
-    if len(trades) > 0:
-        formatted_message = format_trade_data(trades)
-        await send_to_telegram(formatted_message)
-    else:
-        await send_to_telegram(f"No trades found in the last {VP_PERIODICAL_CHECK_TIME/60} minute.")
+        for user_address in USER_ADDRESSES:
+            trade = await fetch_recent_trades(user_address) 
+            if trade:
+                trades += trade
+            
+        if len(trades) > 0:
+            formatted_message = format_trade_data(trades)
+            await send_to_telegram(formatted_message)
+        else:
+            await send_to_telegram(f"No trades found in the last {VP_PERIODICAL_CHECK_TIME/60} minute.")
+        print(f"Await for {VP_PERIODICAL_CHECK_TIME/60} minutes...")
+        await asyncio.sleep(VP_PERIODICAL_CHECK_TIME)  # Wait for X seconds before checking again
 
+
+# ######## #
+# Main Funcs
 if __name__ == "__main__":
     asyncio.run(monitor_trades())

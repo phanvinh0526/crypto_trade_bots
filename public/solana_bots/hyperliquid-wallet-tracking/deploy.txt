@@ -22,3 +22,14 @@ heroku config:set VP_USER_ADDRESSES=0x20c2d95a3dfdca9e9ad12794d5fa6fad99da44f5,0
 # Check logs
 heroku logs --tail --app hyperliquid-wallet-tracking
 
+# Create standard scheduler
+heroku addons:create scheduler:standard --app hyperliquid-wallet-tracking
+
+# Open a scheduler
+heroku addons:open scheduler
+
+# Turn on worker
+heroku ps:scale worker=1 -a hyperliquid-wallet-tracking
+
+# Turn off worker
+heroku ps:scale worker=0 -a hyperliquid-wallet-tracking
