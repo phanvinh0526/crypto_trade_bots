@@ -17,3 +17,5 @@ heroku config:set LUNA_CRUSH_API_TOKEN=... --app app-check-social-engagement
 # Check logs
 heroku logs --tail --app app-check-social-engagement
 
+# ### Note ### #
+# If the search CA does not work, check LunarCrush license, need to upgrade to Idividual subscription. And turn on Worker node on Heroku
